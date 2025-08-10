@@ -140,11 +140,11 @@ export function MantenimientoSidebar({ open, setOpen }: MantenimientoSidebarProp
                 <Wrench className="h-3 sm:h-4 w-3 sm:w-4 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-xs sm:text-sm font-medium text-gray-900">Mantenimiento</p>
-                <p className="text-xs text-gray-500">Módulo Activo</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900">John Doe</p>
+                <p className="text-xs text-gray-500">Mantenimiento</p>
               </div>
               <Badge variant="outline" className="text-xs">
-                ViGO
+                Admin
               </Badge>
             </div>
           </div>
