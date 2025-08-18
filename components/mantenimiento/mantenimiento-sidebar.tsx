@@ -35,7 +35,7 @@ export function MantenimientoSidebar({ open, setOpen }: MantenimientoSidebarProp
     },
     {
       id: "aprobaciones",
-      label: "Aprobaciones",
+      label: "Estado de Solicitudes",
       icon: CheckCircle,
       badge: { label: "58", variant: "default" as const },
       href: "/mantenimiento/aprobaciones",

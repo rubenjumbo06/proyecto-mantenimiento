@@ -22,58 +22,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 
 interface SolicitudesContentProps {
   setSidebarOpen: (open: boolean) => void;
 }
 
-export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) {
+export function AprobacionesContent({ setSidebarOpen }: SolicitudesContentProps) {
   const maintenanceRequests = [
     {
       id: "SM-00001",
       description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "11/07/2025"
+      details: "SDV-08003 / VASC0069 Válvula de Corte"
     },
     {
       id: "SM-00002", 
       description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "13/07/2025"
+      details: "SDV-08003 / VASC0069 Válvula de Corte"
     },
     {
       id: "SM-00003",
       description: "MERLA DE INYECCION DE GAS OZO AX08-260", 
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "18/07/2025"
+      details: "SDV-08003 / VASC0069 Válvula de Corte"
     },
     {
       id: "SM-00004",
       description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "21/07/2025"
+      details: "SDV-08003 / VASC0069 Válvula de Corte"
     },
     {
       id: "SM-00005",
       description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "29/07/2025"
+      details: "SDV-08003 / VASC0069 Válvula de Corte"
     }
   ];
 
   const [filters, setFilters] = useState({
     plataforma: '',
     equipoPadre: '',
-    estadoAviso: '',
     urgencia: '',
   });
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState(filters);
-
-  const [newRequestOpen, setNewRequestOpen] = useState(false);
 
   const plataformaOptions = [
     { value: "COCX11", label: "COCX11" },
@@ -88,12 +78,6 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
     { value: "elemento", label: "FE-08380 / IPFS0025 Elemento de Flujo Hoffer Flow C" },
   ];
 
-  const estadoAvisoOptions = [
-    { value: "pendiente", label: "Pendiente" },
-    { value: "aprobado", label: "Aprobado" },
-    { value: "rechazado", label: "Rechazado" },
-  ];
-
   const urgenciaOptions = [
     { value: "urgente", label: "Urgente +24h" },
     { value: "diferible", label: "Diferible <2d" },
@@ -104,7 +88,6 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
     let options: { value: string; label: string }[] = [];
     if (key === 'plataforma') options = plataformaOptions;
     if (key === 'equipoPadre') options = equipoPadreOptions;
-    if (key === 'estadoAviso') options = estadoAvisoOptions;
     if (key === 'urgencia') options = urgenciaOptions;
     return options.find(opt => opt.value === value)?.label || value;
   };
@@ -127,7 +110,7 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
           >
             <Menu className="w-4 h-4" />
           </Button>
-          <h1 className="text-xl font-semibold">Solicitudes de Mantenimiento</h1>
+          <h1 className="text-xl font-semibold">Avisos de Mantenimiento por Aprobacion</h1>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" className="text-white hover:bg-slate-600">
@@ -143,89 +126,7 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
       <main className="flex-1 overflow-auto p-6">
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Dialog open={newRequestOpen} onOpenChange={setNewRequestOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Nueva Solicitud
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto [&>button.absolute]:hidden">
-                <DialogHeader>
-                  <DialogTitle>Solicitud de Mantenimiento</DialogTitle>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                  <div>
-                    <Label htmlFor="titulo">Título</Label>
-                    <Input id="titulo" />
-                  </div>
-                  <div>
-                    <Label htmlFor="id-solicitud">ID-Solicitud</Label>
-                    <Input id="id-solicitud" />
-                  </div>
-                  <div>
-                    <Label htmlFor="fecha-aviso">Fecha de aviso</Label>
-                    <Input id="fecha-aviso" type="date" />
-                  </div>
-                  <div>
-                    <Label htmlFor="ubicacion">Ubicación</Label>
-                    <Input id="ubicacion" />
-                  </div>
-                  <div>
-                    <Label htmlFor="equipo-hijo">Equipo Hijo</Label>
-                    <Input id="equipo-hijo" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="descripcion">Descripción del aviso</Label>
-                    <Textarea id="descripcion" />
-                  </div>
-                  <div>
-                    <Label htmlFor="autor">Autor del aviso</Label>
-                    <Input id="autor" />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" />
-                  </div>
-                  <div>
-                    <Label htmlFor="motivo-rechazo">Motivo de rechazo</Label>
-                    <Input id="motivo-rechazo" />
-                  </div>
-                  <div>
-                    <Label htmlFor="orden-trabajo">Orden trabajo [OT] asociada</Label>
-                    <Input id="orden-trabajo" />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado-ot">Estado OT asociada</Label>
-                    <Input id="estado-ot" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="fecha-funcional">¿El equipo dejó de funcionar(paró)?</Label>
-                    <Switch id="fecha-funcional" />
-                  </div>
-                  <div>
-                    <Label htmlFor="fecha-fin">Fecha y hora en que el equipo dejó de funcionar</Label>
-                    <Input id="fecha-fin" type="date" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => setNewRequestOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => setNewRequestOpen(false)} // Add actual save logic if needed
-                  >
-                    Guardar
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+          <div className="flex items-center gap-3">
             <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="border-gray-400">
@@ -278,26 +179,6 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="estado-aviso" className="mb-2 block">
-                      Filtrar por Estado Aviso
-                    </Label>
-                    <Select
-                      value={tempFilters.estadoAviso}
-                      onValueChange={(value) => setTempFilters({ ...tempFilters, estadoAviso: value })}
-                    >
-                      <SelectTrigger id="estado-aviso">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {estadoAvisoOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label htmlFor="urgencia" className="mb-2 block">
                       Filtrar por Urgencia
                     </Label>
@@ -339,54 +220,39 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <Badge variant="destructive" className="rounded-full px-2 py-1">
+              12
+            </Badge>
           </div>
           
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Buscar órdenes por nombre..."
+              placeholder="Buscar Solicitudes por nombre..."
               className="pl-10"
             />
           </div>
         </div>
 
         {/* Filter Tags */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-6">
           {filters.plataforma && (
-            <>
-              <span className="text-sm font-medium text-gray-700">Plataforma</span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                <span>{getLabel('plataforma', filters.plataforma)}</span>
-                <button className="ml-2 text-blue-600 hover:text-blue-800" onClick={() => removeFilter('plataforma')}>×</button>
-              </Badge>
-            </>
+            <Badge variant="secondary" className="bg-teal-100 text-teal-800 hover:bg-teal-200">
+              <span>{getLabel('plataforma', filters.plataforma)}</span>
+              <button className="ml-2 text-teal-600 hover:text-teal-800" onClick={() => removeFilter('plataforma')}>×</button>
+            </Badge>
           )}
           {filters.equipoPadre && (
-            <>
-              <span className="text-sm font-medium text-gray-700">Equipo Padre</span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                <span>{getLabel('equipoPadre', filters.equipoPadre)}</span>
-                <button className="ml-2 text-blue-600 hover:text-blue-800" onClick={() => removeFilter('equipoPadre')}>×</button>
-              </Badge>
-            </>
-          )}
-          {filters.estadoAviso && (
-            <>
-              <span className="text-sm font-medium text-gray-700">Estado de Aviso</span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                <span>{getLabel('estadoAviso', filters.estadoAviso)}</span>
-                <button className="ml-2 text-blue-600 hover:text-blue-800" onClick={() => removeFilter('estadoAviso')}>×</button>
-              </Badge>
-            </>
+            <Badge variant="secondary" className="bg-teal-100 text-teal-800 hover:bg-teal-200">
+              <span>{getLabel('equipoPadre', filters.equipoPadre)}</span>
+              <button className="ml-2 text-teal-600 hover:text-teal-800" onClick={() => removeFilter('equipoPadre')}>×</button>
+            </Badge>
           )}
           {filters.urgencia && (
-            <>
-              <span className="text-sm font-medium text-gray-700">Urgencia</span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                <span>{getLabel('urgencia', filters.urgencia)}</span>
-                <button className="ml-2 text-blue-600 hover:text-blue-800" onClick={() => removeFilter('urgencia')}>×</button>
-              </Badge>
-            </>
+            <Badge variant="secondary" className="bg-teal-100 text-teal-800 hover:bg-teal-200">
+              <span>{getLabel('urgencia', filters.urgencia)}</span>
+              <button className="ml-2 text-teal-600 hover:text-teal-800" onClick={() => removeFilter('urgencia')}>×</button>
+            </Badge>
           )}
         </div>
 
@@ -395,20 +261,10 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
           <CardContent className="p-0">
             <div className="divide-y divide-gray-200">
               {maintenanceRequests.map((request, index) => (
-                <div 
-                  key={index} 
-                  className={`p-4 cursor-pointer ${index === 0 || index === 2 ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-100 hover:bg-gray-200'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-gray-900 mb-1">{request.id}</div>
-                      <div className="text-sm text-gray-700 mb-1">{request.description}</div>
-                      <div className="text-sm text-gray-500">{request.details}</div>
-                    </div>
-                    <div className="text-sm text-gray-500 ml-4 whitespace-nowrap">
-                      Creado: {request.created}
-                    </div>
-                  </div>
+                <div key={index} className="p-4 hover:bg-green-200 cursor-pointer bg-green-100">
+                  <div className="font-medium text-gray-900 mb-1">{request.id}</div>
+                  <div className="text-sm text-gray-700 mb-1">{request.description}</div>
+                  <div className="text-sm text-gray-500">{request.details}</div>
                 </div>
               ))}
             </div>
