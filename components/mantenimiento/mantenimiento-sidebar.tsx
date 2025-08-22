@@ -48,6 +48,13 @@ export function MantenimientoSidebar({ open, setOpen }: MantenimientoSidebarProp
       href: "/mantenimiento/ordenes",
     },
     {
+      id: "planificacion",
+      label: "Planificación",
+      icon: ClipboardList,
+      badge: { label: "75", variant: "outline" as const },
+      href: "/mantenimiento/planificacion",
+    },
+    {
       id: "documentos",
       label: "Documentos",
       icon: FolderOpen,
