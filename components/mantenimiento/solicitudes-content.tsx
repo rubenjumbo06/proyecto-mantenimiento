@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, RotateCcw, ArrowUpDown, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,38 +30,13 @@ interface SolicitudesContentProps {
 }
 
 export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) {
-  const maintenanceRequests = [
-    {
-      id: "SM-00001",
-      description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "11/07/2025"
-    },
-    {
-      id: "SM-00002", 
-      description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "13/07/2025"
-    },
-    {
-      id: "SM-00003",
-      description: "MERLA DE INYECCION DE GAS OZO AX08-260", 
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "18/07/2025"
-    },
-    {
-      id: "SM-00004",
-      description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "21/07/2025"
-    },
-    {
-      id: "SM-00005",
-      description: "MERLA DE INYECCION DE GAS OZO AX08-260",
-      details: "SDV-08003 / VASC0069 Válvula de Corte",
-      created: "29/07/2025"
-    }
-  ];
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [filters, setFilters] = useState({
     plataforma: '',
@@ -74,7 +49,26 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
   const [tempFilters, setTempFilters] = useState(filters);
 
   const [newRequestOpen, setNewRequestOpen] = useState(false);
+  const [newForm, setNewForm] = useState({
+    titulo: '',
+    codigo: '',
+    descripcion: '',
+    fecha_aviso: new Date().toISOString().split('T')[0],
+    estado_id: null as number | null,
+    paro: false,
+    fecha_paro: '',
+    autor_id: 1,
+    equipo_padre_id: null as number | null,
+    equipo_hijo_id: null as number | null,
+    urgencia_id: null as number | null,
+    impacto_id: null as number | null,
+    severidad_id: null as number | null,
+    modo_id: null as number | null,
+    deteccion_id: null as number | null,
+    tipo_intervencion_id: null as number | null,
+  });
 
+  // Options hardcoded (fetch dinámicos si necesitas)
   const plataformaOptions = [
     { value: "COCX11", label: "COCX11" },
     { value: "ALBACO", label: "ALBACO" },
@@ -83,22 +77,30 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
   ];
 
   const equipoPadreOptions = [
-    { value: "intercambiador", label: "Intercambiador Calor HARSCO" },
-    { value: "transmisor", label: "IPLS0019 Transmisor de Nivel Fisher" },
-    { value: "elemento", label: "FE-08380 / IPFS0025 Elemento de Flujo Hoffer Flow C" },
+    { value: "1", label: "Intercambiador Calor HARSCO" }, // Asume values como IDs numéricos
+    { value: "2", label: "IPLS0019 Transmisor de Nivel Fisher" },
+    { value: "3", label: "FE-08380 / IPFS0025 Elemento de Flujo Hoffer Flow C" },
   ];
 
   const estadoAvisoOptions = [
-    { value: "pendiente", label: "Pendiente" },
-    { value: "aprobado", label: "Aprobado" },
-    { value: "rechazado", label: "Rechazado" },
+    { value: "1", label: "Pendiente" },
+    { value: "2", label: "Aprobado" },
+    { value: "3", label: "Rechazado" },
   ];
 
   const urgenciaOptions = [
-    { value: "urgente", label: "Urgente +24h" },
-    { value: "diferible", label: "Diferible <2d" },
-    { value: "programable", label: "Programable +14d" },
+    { value: "1", label: "Urgente +24h" },
+    { value: "2", label: "Diferible <2d" },
+    { value: "3", label: "Programable +14d" },
   ];
+
+  // Agrega options para otros IDs (impacto, severidad, etc.)
+  const impactoOptions = [
+    { value: "1", label: "Bajo" },
+    { value: "2", label: "Medio" },
+    { value: "3", label: "Alto" },
+  ];
+  // Repite para severidad_id, modo_id, deteccion_id, tipo_intervencion_id
 
   const getLabel = (key: keyof typeof filters, value: string) => {
     let options: { value: string; label: string }[] = [];
@@ -111,14 +113,78 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
 
   const removeFilter = (key: keyof typeof filters) => {
     setFilters({ ...filters, [key]: '' });
+    fetchData();
   };
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = `/api/solicitudes?page=${page}&limit=${limit}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (filters.estadoAviso) url += `&estado_id=${filters.estadoAviso}`;
+      if (filters.urgencia) url += `&urgencia_id=${filters.urgencia}`;
+      if (filters.equipoPadre) url += `&equipo_padre_id=${filters.equipoPadre}`; // Asume campo directo
+      // Agrega &plataforma si es un campo; si es join, ajusta API
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error al fetch');
+      const { data, total } = await res.json();
+      setSolicitudes(data);
+      setTotal(total);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [page, search, filters]);
+
+  const handleNewChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewForm({ ...newForm, [name]: value });
+  };
+
+  const handleSaveNew = async () => {
+    if (!newForm.titulo) {
+      alert('El título es requerido');
+      return;
+    }
+    if (newForm.estado_id === null) {
+      alert('El estado es requerido'); // Agrega más validaciones según necesites
+      return;
+    }
+    // Si paro es false, limpia fecha_paro
+    if (!newForm.paro) {
+      newForm.fecha_paro = '';
+    }
+    try {
+      const res = await fetch('/api/solicitudes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newForm),
+      });
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error);
+      }
+      setNewRequestOpen(false);
+      fetchData();
+    } catch (err) {
+      alert('Error: ' + (err as Error).message);
+    }
+  };
+
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <>
       {/* Header */}
       <header className="bg-slate-700 text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="sm"
@@ -139,7 +205,6 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto p-6">
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -157,70 +222,91 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                   <div>
                     <Label htmlFor="titulo">Título</Label>
-                    <Input id="titulo" />
+                    <Input id="titulo" name="titulo" value={newForm.titulo} onChange={handleNewChange} />
                   </div>
                   <div>
-                    <Label htmlFor="id-solicitud">ID-Solicitud</Label>
-                    <Input id="id-solicitud" />
+                    <Label htmlFor="codigo">Código (opcional)</Label>
+                    <Input id="codigo" name="codigo" value={newForm.codigo} onChange={handleNewChange} />
                   </div>
                   <div>
                     <Label htmlFor="fecha-aviso">Fecha de aviso</Label>
-                    <Input id="fecha-aviso" type="date" />
+                    <Input id="fecha-aviso" name="fecha_aviso" type="date" value={newForm.fecha_aviso} onChange={handleNewChange} />
                   </div>
                   <div>
-                    <Label htmlFor="ubicacion">Ubicación</Label>
-                    <Input id="ubicacion" />
+                    <Label htmlFor="estado_id">Estado</Label>
+                    <Select
+                      value={newForm.estado_id?.toString() || ''}
+                      onValueChange={(value) => setNewForm({ ...newForm, estado_id: value ? parseInt(value) : null })}
+                    >
+                      <SelectTrigger id="estado_id">
+                        <SelectValue placeholder="Selecciona estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {estadoAvisoOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="equipo-hijo">Equipo Hijo</Label>
-                    <Input id="equipo-hijo" />
+                    <Label htmlFor="urgencia_id">Urgencia</Label>
+                    <Select
+                      value={newForm.urgencia_id?.toString() || ''}
+                      onValueChange={(value) => setNewForm({ ...newForm, urgencia_id: value ? parseInt(value) : null })}
+                    >
+                      <SelectTrigger id="urgencia_id">
+                        <SelectValue placeholder="Selecciona urgencia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {urgenciaOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                  <div>
+                    <Label htmlFor="impacto_id">Impacto</Label>
+                    <Select
+                      value={newForm.impacto_id?.toString() || ''}
+                      onValueChange={(value) => setNewForm({ ...newForm, impacto_id: value ? parseInt(value) : null })}
+                    >
+                      <SelectTrigger id="impacto_id">
+                        <SelectValue placeholder="Selecciona impacto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {impactoOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Repite Select para severidad_id, modo_id, deteccion_id, tipo_intervencion_id, equipo_padre_id, equipo_hijo_id */}
                   <div className="md:col-span-2">
-                    <Label htmlFor="descripcion">Descripción del aviso</Label>
-                    <Textarea id="descripcion" />
-                  </div>
-                  <div>
-                    <Label htmlFor="autor">Autor del aviso</Label>
-                    <Input id="autor" />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" />
-                  </div>
-                  <div>
-                    <Label htmlFor="motivo-rechazo">Motivo de rechazo</Label>
-                    <Input id="motivo-rechazo" />
-                  </div>
-                  <div>
-                    <Label htmlFor="orden-trabajo">Orden trabajo [OT] asociada</Label>
-                    <Input id="orden-trabajo" />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado-ot">Estado OT asociada</Label>
-                    <Input id="estado-ot" />
+                    <Label htmlFor="descripcion">Descripción</Label>
+                    <Textarea id="descripcion" name="descripcion" value={newForm.descripcion} onChange={handleNewChange} />
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Label htmlFor="fecha-funcional">¿El equipo dejó de funcionar(paró)?</Label>
-                    <Switch id="fecha-funcional" />
+                    <Label htmlFor="paro">¿Paró?</Label>
+                    <Switch id="paro" checked={newForm.paro} onCheckedChange={(checked) => setNewForm({ ...newForm, paro: checked })} />
                   </div>
-                  <div>
-                    <Label htmlFor="fecha-fin">Fecha y hora en que el equipo dejó de funcionar</Label>
-                    <Input id="fecha-fin" type="date" />
-                  </div>
+                  {newForm.paro && (
+                    <div>
+                      <Label htmlFor="fecha-paro">Fecha paro</Label>
+                      <Input id="fecha-paro" name="fecha_paro" type="date" value={newForm.fecha_paro} onChange={handleNewChange} />
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => setNewRequestOpen(false)}
-                  >
+                  <Button variant="destructive" onClick={() => setNewRequestOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button
-                    type="submit"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => setNewRequestOpen(false)} // Add actual save logic if needed
-                  >
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveNew}>
                     Guardar
                   </Button>
                 </DialogFooter>
@@ -344,8 +430,10 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Buscar órdenes por nombre..."
+              placeholder="Buscar por título o descripción..."
               className="pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
@@ -393,41 +481,45 @@ export function SolicitudesContent({ setSidebarOpen }: SolicitudesContentProps) 
         {/* Data Table */}
         <Card>
           <CardContent className="p-0">
-            <div className="divide-y divide-gray-200">
-              {maintenanceRequests.map((request, index) => (
-                <div 
-                  key={index} 
-                  className={`p-4 cursor-pointer ${index === 0 || index === 2 ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-100 hover:bg-gray-200'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-gray-900 mb-1">{request.id}</div>
-                      <div className="text-sm text-gray-700 mb-1">{request.description}</div>
-                      <div className="text-sm text-gray-500">{request.details}</div>
-                    </div>
-                    <div className="text-sm text-gray-500 ml-4 whitespace-nowrap">
-                      Creado: {request.created}
+            {loading ? (
+              <p className="p-4">Cargando...</p>
+            ) : error ? (
+              <p className="p-4 text-red-500">Error: {error}</p>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {solicitudes.map((request: any, index: number) => (
+                  <div 
+                    key={request.solicitud_id} 
+                    className={`p-4 cursor-pointer ${index % 2 === 0 ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-gray-900 mb-1">{request.codigo}</div>
+                        <div className="text-sm text-gray-700 mb-1">{request.titulo}</div>
+                        <div className="text-sm text-gray-500">{request.descripcion}</div>
+                      </div>
+                      <div className="text-sm text-gray-500 ml-4 whitespace-nowrap">
+                        Creado: {new Date(request.fecha_aviso).toLocaleDateString('es-ES')}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Pagination */}
         <div className="flex items-center justify-center space-x-2 mt-6">
-          <Button variant="ghost" size="sm" disabled>
+          <Button variant="ghost" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="bg-gray-100">1</Button>
-          <Button variant="ghost" size="sm">2</Button>
-          <Button variant="ghost" size="sm">3</Button>
-          <Button variant="ghost" size="sm">4</Button>
-          <Button variant="ghost" size="sm">5</Button>
-          <span className="text-gray-500 hidden sm:inline">6 ...</span>
-          <Button variant="ghost" size="sm">10</Button>
-          <Button variant="ghost" size="sm">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <Button key={p} variant="ghost" size="sm" className={p === page ? 'bg-gray-100' : ''} onClick={() => setPage(p)}>
+              {p}
+            </Button>
+          ))}
+          <Button variant="ghost" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
