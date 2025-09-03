@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { MantenimientoSidebar } from "@/components/mantenimiento/mantenimiento-sidebar";
-import { SolicitudesContent } from "@/components/mantenimiento/solicitudes-content";
+import { AvisosContent } from "@/components/mantenimiento/avisos-content";
 import { useState } from "react";
 
 export default function SolicitudesPage() {
@@ -16,7 +16,7 @@ export default function SolicitudesPage() {
     <div className="flex h-screen bg-gray-50">
       <MantenimientoSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <SolicitudesContent setSidebarOpen={setSidebarOpen} />
+        <AvisosContent setSidebarOpen={setSidebarOpen} />
       </div>
     </div>
   )

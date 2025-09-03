@@ -1,10 +1,10 @@
 "use client";
 
-import { Search, RotateCcw, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Search, RotateCcw, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { MantenimientoSidebar } from "@/components/mantenimiento/mantenimiento-sidebar";
 import { AprobacionesContent } from "@/components/mantenimiento/aprobaciones-content";
 import { useState } from "react";
@@ -19,5 +19,5 @@ export default function SolicitudesPage() {
         <AprobacionesContent setSidebarOpen={setSidebarOpen} />
       </div>
     </div>
-  )
+  );
 }
