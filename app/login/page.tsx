@@ -1,6 +1,4 @@
-// app/login/page.tsx
 "use client";
-
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,12 +17,32 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    // Simulación de autenticación (reemplaza con tu lógica real, ej. API call)
-    if (email === 'user@example.com' && password === 'password123') {
-      // Éxito: redirige a dashboard o página principal
-      router.push('/dashboard');
-    } else {
-      setError('Credenciales inválidas');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Error en el login');
+        return;
+      }
+
+      // Guarda sesión simple (puedes pasar a cookies/JWT más adelante)
+      localStorage.setItem('user', JSON.stringify(data));
+
+      // Redirección por nivel
+      const nivel = (data.nivel || '').toLowerCase();
+      if (nivel === 'superadmin') router.push('/dashboard');
+      else if (nivel === 'admin') router.push('/dashboard');
+      else router.push('/dashboard');
+
+    } catch (err) {
+      console.error(err);
+      setError('Error de conexión');
     }
   };
 
@@ -38,30 +56,14 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Correo Electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1"
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
             </div>
             <div>
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1"
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" className="w-full">
-              Ingresar
-            </Button>
+            <Button type="submit" className="w-full">Ingresar</Button>
           </form>
         </CardContent>
       </Card>

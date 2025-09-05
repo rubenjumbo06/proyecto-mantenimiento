@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -29,7 +28,7 @@ interface AprobacionesContentProps {
 }
 
 interface Aprobacion {
-  id: number;
+  solicitudaprobada_id: number;
   titulo: string;
   aviso_id: number;
   fecha_aviso: string | null;
@@ -41,10 +40,8 @@ interface Aprobacion {
   descripcion: string | null;
   descripcion_modo: string | null;
   descripcion_metodo: string | null;
-  documento_adjunto: string | null;
+  documento_adjunto?: string | null;
   duracion: string | null;
-  equipo_paro: boolean;
-  equipo_paro_fechahora: string | null;
   impacto_id: number | null;
   severidad_id: number | null;
   modo_id: number | null;
@@ -54,7 +51,7 @@ interface Aprobacion {
   contratista_id: number | null;
   cantidad_personas_asignadas: number | null;
   codigo_clase: string | null;
-  prioridad_ejecucion: string | null;
+  prioridad_ejecucion?: string | null;
   fecha_creacion: string;
   usuario_id: number | null;
 }
@@ -72,18 +69,17 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
   const [filters, setFilters] = useState({
     plataforma: '',
     equipoPadre: '',
     urgencia: '',
   });
-
   const [filterOpen, setFilterOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState(filters);
-
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedAprobacion, setSelectedAprobacion] = useState<Aprobacion | null>(null);
+  const [formData, setFormData] = useState<Partial<Aprobacion> | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [ubicacionOptions, setUbicacionOptions] = useState<Option[]>([]);
   const [equipoOptions, setEquipoOptions] = useState<Option[]>([]);
@@ -156,6 +152,72 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
 
   const formatSolicitudId = (id: number) => `SM-${id.toString().padStart(5, '0')}`;
 
+  const handleInputChange = (field: keyof Aprobacion, value: string | number | null) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData || !selectedAprobacion) return;
+
+    // Validate required fields
+    const requiredFields: (keyof Aprobacion)[] = ['titulo', 'aviso_id', 'autor_id', 'equipo_padre_id', 'equipo_hijo_id'];
+    for (const field of requiredFields) {
+      if (!formData[field]) {
+        setFormError(`El campo ${field} es obligatorio`);
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/aprobaciones`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitudaprobada_id: selectedAprobacion.solicitudaprobada_id, ...formData }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Error al actualizar la aprobación');
+      }
+
+      setFormError(null);
+      setViewOpen(false);
+      fetchAprobaciones(); // Refresh the list
+    } catch (err) {
+      setFormError((err as Error).message);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAprobacion) {
+      setFormData({
+        titulo: selectedAprobacion.titulo,
+        fecha_aviso: selectedAprobacion.fecha_aviso,
+        urgencia_id: selectedAprobacion.urgencia_id,
+        autor_id: selectedAprobacion.autor_id,
+        ubicacion_id: selectedAprobacion.ubicacion_id,
+        equipo_padre_id: selectedAprobacion.equipo_padre_id,
+        equipo_hijo_id: selectedAprobacion.equipo_hijo_id,
+        descripcion: selectedAprobacion.descripcion,
+        descripcion_modo: selectedAprobacion.descripcion_modo,
+        descripcion_metodo: selectedAprobacion.descripcion_metodo,
+        documento_adjunto: selectedAprobacion.documento_adjunto,
+        duracion: selectedAprobacion.duracion,
+        impacto_id: selectedAprobacion.impacto_id,
+        severidad_id: selectedAprobacion.severidad_id,
+        modo_id: selectedAprobacion.modo_id,
+        deteccion_id: selectedAprobacion.deteccion_id,
+        tipointervencion_id: selectedAprobacion.tipointervencion_id,
+        especialidad_id: selectedAprobacion.especialidad_id,
+        contratista_id: selectedAprobacion.contratista_id,
+        cantidad_personas_asignadas: selectedAprobacion.cantidad_personas_asignadas,
+        codigo_clase: selectedAprobacion.codigo_clase,
+        prioridad_ejecucion: selectedAprobacion.prioridad_ejecucion,
+        usuario_id: selectedAprobacion.usuario_id,
+      });
+    }
+  }, [selectedAprobacion]);
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -170,10 +232,10 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
           >
             <Menu className="w-4 h-4" />
           </Button>
-          <h1 className="text-xl font-semibold">Avisos de Mantenimiento por Aprobacion</h1>
+          <h1 className="text-xl font-semibold">Avisos de Mantenimiento Aprobados</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="text-white hover:bg-slate-600">
+          <Button variant="ghost" size="sm" className="text-white hover:bg-slate-600" onClick={fetchAprobaciones}>
             <RotateCcw className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="sm" className="text-white hover:bg-slate-600">
@@ -324,6 +386,10 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
           )}
         </div>
 
+        {formError && (
+          <p className="text-red-500 mb-4">{formError}</p>
+        )}
+
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -335,7 +401,7 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
             ) : (
               <div className="divide-y divide-gray-200">
                 {aprobaciones.map((aprobacion) => (
-                  <Dialog key={aprobacion.id} open={viewOpen && selectedAprobacion?.id === aprobacion.id} onOpenChange={setViewOpen}>
+                  <Dialog key={aprobacion.solicitudaprobada_id} open={viewOpen && selectedAprobacion?.solicitudaprobada_id === aprobacion.solicitudaprobada_id} onOpenChange={setViewOpen}>
                     <DialogTrigger asChild>
                       <div 
                         className="p-4 hover:bg-green-200 cursor-pointer bg-green-100"
@@ -352,55 +418,282 @@ export function AprobacionesContent({ setSidebarOpen }: AprobacionesContentProps
                         </div>
                       </div>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto [&>button.absolute]:hidden">
+                    <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button.absolute]:hidden">
                       <DialogHeader>
-                        <DialogTitle>Detalles de Aprobación</DialogTitle>
+                        <DialogTitle>Editar Solicitud Aprobada de Mantenimiento</DialogTitle>
                       </DialogHeader>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                        <div>
-                          <Label>Título</Label>
-                          <p>{selectedAprobacion?.titulo ?? 'N/A'}</p>
+
+                      {selectedAprobacion && formData && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 text-sm">
+                          {/* Campo: Título */}
+                          <div>
+                            <Label htmlFor="titulo">Título</Label>
+                            <Input 
+                              id="titulo" 
+                              value={formData.titulo || ''} 
+                              onChange={(e) => handleInputChange('titulo', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: ID-Solicitud */}
+                          <div>
+                            <Label>ID-Solicitud</Label>
+                            <Input value={formatSolicitudId(selectedAprobacion.aviso_id)} disabled />
+                          </div>
+
+                          {/* Campo: Fecha de aviso */}
+                          <div>
+                            <Label>Fecha de aviso</Label>
+                            <Input
+                              type="datetime-local"
+                              value={formData.fecha_aviso ? new Date(formData.fecha_aviso).toISOString().slice(0, 16) : ''}
+                              onChange={(e) => handleInputChange('fecha_aviso', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: Estado */}
+                          <div>
+                            <Label>Estado</Label>
+                            <Input value="Aprobado" disabled />
+                          </div>
+
+                          {/* Campo: Equipo Padre */}
+                          <div>
+                            <Label>Equipo Padre</Label>
+                            <Select 
+                              value={String(formData.equipo_padre_id)} 
+                              onValueChange={(value) => handleInputChange('equipo_padre_id', parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar equipo padre" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {equipoOptions
+                                  .filter((opt) => opt.value.startsWith("padre-"))
+                                  .map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value.replace("padre-", "")}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Campo: Equipo Hijo */}
+                          <div>
+                            <Label>Equipo Hijo</Label>
+                            <Select 
+                              value={String(formData.equipo_hijo_id)} 
+                              onValueChange={(value) => handleInputChange('equipo_hijo_id', parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar equipo hijo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {equipoOptions
+                                  .filter((opt) => opt.value.startsWith("hijo-"))
+                                  .map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value.replace("hijo-", "")}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Campo: Autor */}
+                          <div>
+                            <Label>Autor del aviso</Label>
+                            <Input value="Elmer Boulangger" disabled />
+                          </div>
+
+                          {/* Campo: Ubicación */}
+                          <div>
+                            <Label>Ubicación</Label>
+                            <Select 
+                              value={String(formData.ubicacion_id)} 
+                              onValueChange={(value) => handleInputChange('ubicacion_id', parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar ubicación" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ubicacionOptions.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Campo: Descripción */}
+                          <div className="md:col-span-2">
+                            <Label>Descripción del aviso</Label>
+                            <textarea
+                              className="w-full border rounded-md p-2"
+                              rows={5}
+                              value={formData.descripcion ?? ""}
+                              onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: ¿Equipo dejó de funcionar? */}
+                          <div>
+                            <Label>¿El equipo dejó de funcionar?</Label>
+                            <Select
+                              value={formData.modo_id ? 'sí' : 'no'}
+                              onValueChange={(value) => handleInputChange('modo_id', value === 'sí' ? 1 : null)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sí">Sí</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Campo: Duración */}
+                          <div>
+                            <Label>Duración (h)</Label>
+                            <Input 
+                              type="text" 
+                              value={formData.duracion ?? ""} 
+                              onChange={(e) => handleInputChange('duracion', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: Impacto */}
+                          <div>
+                            <Label>Impacto de falla</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.impacto_id ?? ""} 
+                              onChange={(e) => handleInputChange('impacto_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Especialidad */}
+                          <div>
+                            <Label>Especialidad</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.especialidad_id ?? ""} 
+                              onChange={(e) => handleInputChange('especialidad_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Personas asignadas */}
+                          <div>
+                            <Label>Personas asignadas</Label>
+                            <Input
+                              type="number"
+                              value={formData.cantidad_personas_asignadas ?? ""}
+                              onChange={(e) => handleInputChange('cantidad_personas_asignadas', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Contratista */}
+                          <div>
+                            <Label>Contratista</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.contratista_id ?? ""} 
+                              onChange={(e) => handleInputChange('contratista_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Tipo de intervención */}
+                          <div>
+                            <Label>Tipo de intervención</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.tipointervencion_id ?? ""} 
+                              onChange={(e) => handleInputChange('tipointervencion_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Código clase equipo */}
+                          <div>
+                            <Label>Código clase equipo</Label>
+                            <Input 
+                              value={formData.codigo_clase ?? ""} 
+                              onChange={(e) => handleInputChange('codigo_clase', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: Severidad */}
+                          <div>
+                            <Label>Severidad de falla</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.severidad_id ?? ""} 
+                              onChange={(e) => handleInputChange('severidad_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Prioridad */}
+                          <div>
+                            <Label>Prioridad</Label>
+                            <Input value="Programable ← 14d" disabled />
+                          </div>
+
+                          {/* Campo: Modo de falla */}
+                          <div>
+                            <Label>Modo de falla</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.modo_id ?? ""} 
+                              onChange={(e) => handleInputChange('modo_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Descripción modo */}
+                          <div className="md:col-span-2">
+                            <Label>Descripción modo de falla</Label>
+                            <textarea
+                              className="w-full border rounded-md p-2"
+                              rows={3}
+                              value={formData.descripcion_modo ?? ""}
+                              onChange={(e) => handleInputChange('descripcion_modo', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Campo: Detección */}
+                          <div>
+                            <Label>Detección de falla</Label>
+                            <Input 
+                              type="number" 
+                              value={formData.deteccion_id ?? ""} 
+                              onChange={(e) => handleInputChange('deteccion_id', parseInt(e.target.value) || null)}
+                            />
+                          </div>
+
+                          {/* Campo: Método de detección */}
+                          <div className="md:col-span-2">
+                            <Label>Descripción método de detección</Label>
+                            <textarea
+                              className="w-full border rounded-md p-2"
+                              rows={3}
+                              value={formData.descripcion_metodo ?? ""}
+                              onChange={(e) => handleInputChange('descripcion_metodo', e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label>ID-Solicitud</Label>
-                          <p>{selectedAprobacion ? formatSolicitudId(selectedAprobacion.aviso_id) : 'N/A'}</p>
-                        </div>
-                        <div>
-                          <Label>Fecha de aviso</Label>
-                          <p>{selectedAprobacion && selectedAprobacion.fecha_aviso ? new Date(selectedAprobacion.fecha_aviso).toLocaleString('es-ES') : 'N/A'}</p>
-                        </div>
-                        <div>
-                          <Label>Equipo Padre</Label>
-                          <p>
-                            {selectedAprobacion && selectedAprobacion.equipo_padre_id
-                              ? equipoOptions.find(opt => opt.value === `padre-${selectedAprobacion.equipo_padre_id}`)?.label ?? 'N/A'
-                              : 'N/A'}
-                          </p>
-                        </div>
-                        <div>
-                          <Label>Ubicación</Label>
-                          <p>
-                            {selectedAprobacion && selectedAprobacion.ubicacion_id != null
-                              ? ubicacionOptions.find(opt => opt.value === selectedAprobacion.ubicacion_id!.toString())?.label ?? 'N/A'
-                              : 'N/A'}
-                          </p>
-                        </div>
-                        <div>
-                          <Label>Equipo Hijo</Label>
-                          <p>
-                            {selectedAprobacion && selectedAprobacion.equipo_hijo_id
-                              ? equipoOptions.find(opt => opt.value === `hijo-${selectedAprobacion.equipo_hijo_id}`)?.label ?? 'N/A'
-                              : 'N/A'}
-                          </p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label>Descripción</Label>
-                          <p>{selectedAprobacion?.descripcion ?? 'N/A'}</p>
-                        </div>
-                      </div>
+                      )}
+
                       <DialogFooter>
                         <Button variant="destructive" onClick={() => setViewOpen(false)}>
                           Cerrar
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={handleSubmit}
+                        >
+                          Guardar
                         </Button>
                       </DialogFooter>
                     </DialogContent>
